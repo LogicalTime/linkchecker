@@ -15,6 +15,12 @@ import akka.remote.RemoteScope
 import scala.util.Random
 import akka.cluster.Member
 
+
+// feature/function/role/responsibility of this actor
+// Big Idea- Holds jobs in a queue, runs one at a time & monitors, communicates with client regarding job's success/failure/?progress?
+// This is very much like a receptionist- communication liason between client's job requests and info coming about job- success/fail/progress
+// AKA ClientJobLiason
+// AKA ClientCommunicatorAndJobBuffererAndJobMonitor
 object Receptionist {
   private case class Job(client: ActorRef, url: String)
   case class Get(url: String)
@@ -22,6 +28,21 @@ object Receptionist {
   case class Failed(url: String, reason: String)
 }
 
+
+
+
+// Broken down:
+  // - Handles All Communication with client
+    // - Queue requests or tell client queue full
+    // - Get Successful and/or Failure results and send back to client
+  // - Holds queue of requests to process where there are any requests
+  // - Makes a child actor that processes the first job on the queue and returns results.
+  // - Monitors the job that is running to be able to send back a failure response
+
+// TODO What happens when this actor dies? I suppose the actor that sent it a job should watch for that?
+// Perhaps we can not do better than that? If we saved the job in another actor that could die as well.
+// It seems best to have the info in one place that the other actor can monitor. i'm not sure we can really protect against failure/death.
+// What happens if in a distributed setting if this dies? Does the other machine get a Terminated message?
 class Receptionist extends Actor {
   import Receptionist._
 
@@ -52,6 +73,10 @@ class Receptionist extends Actor {
       context.become(enqueueJob(queue, Job(sender, url)))
   }
 
+  // Function that returns the next state to be in. That's a different paradigm!!
+  // TODO why does this increment reqNo, it seems like it could be called even when a request didn't come in.
+  // Also are they requests enqueued? requests accepted? or all requests whether accepted or rejected?
+  // Perhaps this is just so the controllers all have different names and the identifier name is misleading? I think that's it.
   def runNext(queue: Vector[Job]): Receive = {
     reqNo += 1
     if (queue.isEmpty) waiting
