@@ -1,13 +1,18 @@
 package info.rkuhn.linkchecker
 
-import akka.actor.Actor
+import akka.actor.{Props, Actor, ActorLogging, Status}
 import akka.pattern.pipe
 import java.util.concurrent.Executor
-import akka.actor.ActorLogging
-import akka.actor.Status
 import scala.concurrent.ExecutionContext
 import org.jsoup.Jsoup
 import scala.collection.JavaConverters._
+
+object Getter{
+  def props(url: String, depth: Int): Props = Props(new Getter(url, depth))
+}
+// feature/function/role/responsibility of this actor
+// Big Idea- Hits url, finds links, returns them to the requester. Keeps depth info with it so controller doesn't have to keep track.
+// I think this could be avoided for nicer SOC. but best solution seems to have an actor in between that just holds the data.
 
 // Made just for this one job and then stopped. It makes the single web request and pipes the scala future to itself
 // where it then parses the response, searching for what is of interest and returning each item to its parent as it is found.

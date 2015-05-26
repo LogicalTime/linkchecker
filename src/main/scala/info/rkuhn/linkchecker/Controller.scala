@@ -26,13 +26,14 @@ class Controller extends Actor with ActorLogging {
 
   context.setReceiveTimeout(10.seconds)
 
-  def getterProps(url: String, depth: Int): Props = Props(new Getter(url, depth))
+
 
   def receive = {
     case Check(url, depth) => // here depth = "depth url link was found at"
       log.debug("{} checking {}", depth, url)
       if (!cache(url) && depth > 0)
-        context.watch(context.actorOf(getterProps(url, depth - 1))) //depth-1 = "depth to search for url links at"
+//        context.watch(context.actorOf(Getter.props(url, depth - 1))) //depth-1 = "depth to search for url links at"
+      context.watch(context.actorOf(GetterReceptionistMvB.props(url, depth - 1))) //depth-1 = "depth to search for url links at"
       cache += url
     case Terminated(_) =>
       if (context.children.isEmpty)
