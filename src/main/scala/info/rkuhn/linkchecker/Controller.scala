@@ -31,11 +31,12 @@ class Controller extends Actor with ActorLogging {
   def receive = {
     case Check(url, depth) => // here depth = "depth url link was found at"
       log.debug("{} checking {}", depth, url)
-      if (!cache(url) && depth > 0)
-//        context.watch(context.actorOf(Getter.props(url, depth - 1))) //depth-1 = "depth to search for url links at"
-      context.watch(context.actorOf(GetterReceptionistMvB.props(url, depth - 1))) //depth-1 = "depth to search for url links at"
+      if (!cache(url) && depth > 0) {
+        //        context.watch(context.actorOf(Getter.props(url, depth - 1))) //depth-1 = "depth to search for url links at"
+        context.watch(context.actorOf(GetterReceptionistMvB.props(url, depth - 1))) //depth-1 = "depth to search for url links at"
+      }
       cache += url
-    case Terminated(_) =>
+    case Terminated(_) => //TODO why the heck is the termination message being used to signal "done", my intuition tells me this is baaad. Am I missing something?
       if (context.children.isEmpty)
         context.parent ! Result(cache)
     case ReceiveTimeout =>

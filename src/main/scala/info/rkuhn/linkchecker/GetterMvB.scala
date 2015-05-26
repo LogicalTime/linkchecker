@@ -31,9 +31,13 @@ class GetterMvB(url: String) extends Actor {
     case body: String =>
       for (link <- findLinks(body))
         context.parent ! LinkFound(link)
-      context.parent ! Done
-      context.stop(self)
-    case _: Status.Failure => context.stop(self)
+      stop()
+    case _: Status.Failure => stop()
+  }
+
+  def stop(): Unit ={
+    context.parent ! Done
+    context.stop(self)
   }
 
 

@@ -18,6 +18,7 @@ class Main extends Actor {
 
   val receptionist = context.actorOf(Props[Receptionist], "receptionist")
   context.watch(receptionist) // sign death pact
+  // TODO what does it mean for an actor to be terminated? does restarted count? probably not!
   
   receptionist ! Get("http://www.google.com")
   receptionist ! Get("http://www.google.com/1")
@@ -34,6 +35,7 @@ class Main extends Actor {
     case Failed(url, reason) =>
       println(s"Failed to fetch '$url': $reason\n")
     case ReceiveTimeout =>
+      println(s"Main Client Received Timeout signal. Shutting down self.")
       context.stop(self)
   }
 
