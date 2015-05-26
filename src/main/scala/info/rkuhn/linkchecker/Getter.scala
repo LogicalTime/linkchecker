@@ -33,7 +33,7 @@ class Getter(url: String, depth: Int) extends Actor {
 
   client get url pipeTo self
 
-  def receive = {
+  def receive: Receive = {
     case body: String =>
       for (link <- findLinks(body))
         context.parent ! Controller.Check(link, depth) // depth = "depth url link found at"

@@ -23,7 +23,7 @@ class GetterReceptionistMvB(url: String, depth: Int) extends Actor with ActorLog
 
 
 
-  def receive = {
+  def receive: Receive = {
     case GetterMvB.LinkFound( link) => context.parent ! Controller.Check(link, depth)
     case GetterMvB.Done =>
       context.stop(self)

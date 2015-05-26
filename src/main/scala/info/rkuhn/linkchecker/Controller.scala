@@ -28,7 +28,7 @@ class Controller extends Actor with ActorLogging {
 
 
 
-  def receive = {
+  def receive: Receive = {
     case Check(url, depth) => // here depth = "depth url link was found at"
       log.debug("{} checking {}", depth, url)
       if (!cache(url) && depth > 0) {
