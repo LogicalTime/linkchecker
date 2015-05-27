@@ -29,7 +29,7 @@ class GetterReceptionistMvB(url: String, depth: Int) extends Actor with ActorLog
       context.stop(self)
     case _: Status.Failure => context.stop(self) // TODO find out where this message comes from? I think it might come from the future from url getting, if so it can be removed
     case Terminated( msg) =>
-//      log.warning("received Termindated in GetterReceptionistMvB. Msg={}", msg)
+//      log.warning("received Terminated in GetterReceptionistMvB. Msg={}", msg)
       //TODO think about termination strategies that are possible. This seems to be part of the contract with the controller.
       // Will the child stop itself when it receives a termination message from its children?
       context.stop(self)
