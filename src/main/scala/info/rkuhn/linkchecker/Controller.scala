@@ -36,7 +36,9 @@ class Controller extends Actor with ActorLogging {
         context.watch(context.actorOf(GetterReceptionistMvB.props(url, depth - 1))) //depth-1 = "depth to search for url links at"
       }
       cache += url
-    case Terminated(_) => //TODO why the heck is the termination message being used to signal "done", my intuition tells me this is baaad. Am I missing something?
+    case Terminated(_) => //TODO why the heck is the termination message being used to signal "done", my intuition tells me this is bad. Am I missing something?
+      // It's used to signal done because it is guaranteed to arrive even if the child is on another machine and that machine dies.
+      // Terminated signal is a unique one.
       if (context.children.isEmpty)
         context.parent ! Result(cache)
     case ReceiveTimeout =>
