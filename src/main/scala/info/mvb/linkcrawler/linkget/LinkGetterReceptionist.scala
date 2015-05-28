@@ -21,8 +21,8 @@ class LinkGetterReceptionist(url: String, depth: Int) extends Actor with ActorLo
   import LinkGetterReceptionist._
   implicit val executor = context.dispatcher.asInstanceOf[Executor with ExecutionContext]
 
-  val child =context.watch(context.actorOf(LinkGetter.props(url)))
-
+  val child =context.watch(context.actorOf(linkGetterProps))
+  def linkGetterProps: Props = LinkGetter.props(url)
 
 
   def receive: Receive = {

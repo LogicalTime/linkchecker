@@ -14,7 +14,7 @@ object LinkGetter{
   case class LinkFound(url: String)
   object Done
 
-  def props(url: String): Props = Props(new LinkGetter(url))
+  def props(url: String, webClient: WebClient = AsyncWebClient): Props = Props(new LinkGetter(url, webClient))
 }
 
 // feature/function/role/responsibility of this actor
@@ -22,11 +22,11 @@ object LinkGetter{
 
 // Made just for this one job and then stopped. It makes the single web request and pipes the scala future to itself
 // where it then parses the response, searching for what is of interest (a href tags here) and returning each item to its parent as it is found.
-class LinkGetter(url: String) extends Actor {
+class LinkGetter(url: String, webClient: WebClient) extends Actor {
   import LinkGetter._
 
   implicit val executor = context.dispatcher.asInstanceOf[Executor with ExecutionContext]
-  def client: WebClient = AsyncWebClient
+  def client: WebClient = webClient
 
   client get url pipeTo self
 

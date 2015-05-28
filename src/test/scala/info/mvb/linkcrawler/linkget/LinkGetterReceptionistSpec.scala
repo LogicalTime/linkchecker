@@ -45,6 +45,7 @@ object GetterSpec {
 
   def fakeGetter(url: String, depth: Int): Props =
     Props(new LinkGetterReceptionist(url, depth) {
+      override def linkGetterProps: Props = LinkGetter.props(url, FakeWebClient)
 //      override def client = FakeWebClient //TODO how to get fake web client into child?
     })
 
@@ -66,6 +67,7 @@ class GetterSpec extends TestKit(ActorSystem("GetterSpec"))
       for (link <- links(firstLink))
         expectMsg(LinkCrawler.Check(link, 2))
       watch(getter)
+      expectMsg(LinkGetterReceptionist.Done)
       expectTerminated(getter)
     }
 
