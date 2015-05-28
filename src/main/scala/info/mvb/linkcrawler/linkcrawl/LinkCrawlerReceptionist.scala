@@ -1,27 +1,19 @@
-package info.rkuhn.linkchecker
+package info.mvb.linkcrawler.linkcrawl
 
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.actor.Terminated
-import akka.actor.SupervisorStrategy
-import akka.cluster.Cluster
-import akka.cluster.ClusterEvent
-import akka.actor.Address
-import scala.concurrent.duration._
-import akka.actor.ReceiveTimeout
-import akka.actor.Deploy
+import akka.actor.{Actor, ActorRef, Address, Deploy, Props, ReceiveTimeout, SupervisorStrategy, Terminated}
+import akka.cluster.{Cluster, ClusterEvent}
 import akka.remote.RemoteScope
+
+import scala.concurrent.duration._
 import scala.util.Random
-import akka.cluster.Member
 
-
+//
 // feature/function/role/responsibility of this actor
 // Big Idea- Holds jobs in a queue, runs one at a time & monitors, communicates with client regarding job's success/failure/?progress?
 // This is very much like a receptionist- communication liason between client's job requests and info coming about job- success/fail/progress
 // AKA ClientJobLiason
 // AKA ClientCommunicatorAndJobBuffererAndJobMonitor
-object Receptionist {
+object LinkCrawlerReceptionist {
   private case class Job(client: ActorRef, url: String)
   case class Get(url: String)
   case class Result(url: String, links: Set[String])
@@ -43,10 +35,10 @@ object Receptionist {
 // Perhaps we can not do better than that? If we saved the job in another actor that could die as well.
 // It seems best to have the info in one place that the other actor can monitor. i'm not sure we can really protect against failure/death.
 // What happens if in a distributed setting if this dies? Does the other machine get a Terminated message?
-class Receptionist extends Actor {
-  import Receptionist._
+class LinkCrawlerReceptionist extends Actor {
+  import LinkCrawlerReceptionist._
 
-  def controllerProps: Props = Props[Controller]
+  def controllerProps: Props = Props[LinkCrawler]
 
   override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
@@ -60,7 +52,7 @@ class Receptionist extends Actor {
   }
 
   def running(queue: Vector[Job]): Receive = {
-    case Controller.Result(links) =>
+    case LinkCrawler.Result(links) =>
       val job = queue.head
       job.client ! Result(job.url, links)
       context.stop(context.unwatch(sender))
@@ -83,7 +75,7 @@ class Receptionist extends Actor {
     else {
       val controller = context.actorOf(controllerProps, s"c$reqNo")
       context.watch(controller)
-      controller ! Controller.Check(queue.head.url, 2)
+      controller ! LinkCrawler.Check(queue.head.url, 2)
       running(queue)
     }
   }
@@ -98,8 +90,8 @@ class Receptionist extends Actor {
 }
 
 class ClusterReceptionist extends Actor {
-  import Receptionist._
-  import ClusterEvent.{ MemberUp, MemberRemoved }
+  import ClusterEvent.{MemberRemoved, MemberUp}
+  import LinkCrawlerReceptionist._
 
   val cluster = Cluster(context.system)
   cluster.subscribe(self, classOf[MemberUp])
@@ -143,21 +135,21 @@ class Customer(client: ActorRef, url: String, node: Address) extends Actor {
   implicit val s = context.parent
 
   override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
-  val props = Props[Controller].withDeploy(Deploy(scope = RemoteScope(node)))
+  val props = Props[LinkCrawler].withDeploy(Deploy(scope = RemoteScope(node)))
   val controller = context.actorOf(props, "controller")
   context.watch(controller)
 
   context.setReceiveTimeout(5.seconds)
-  controller ! Controller.Check(url, 2)
+  controller ! LinkCrawler.Check(url, 2)
 
   def receive = ({
     case ReceiveTimeout =>
       context.unwatch(controller)
-      client ! Receptionist.Failed(url, "controller timed out")
+      client ! LinkCrawlerReceptionist.Failed(url, "controller timed out")
     case Terminated(_) =>
-      client ! Receptionist.Failed(url, "controller died")
-    case Controller.Result(links) =>
+      client ! LinkCrawlerReceptionist.Failed(url, "controller died")
+    case LinkCrawler.Result(links) =>
       context.unwatch(controller)
-      client ! Receptionist.Result(url, links)
+      client ! LinkCrawlerReceptionist.Result(url, links)
   }: Receive) andThen (_ => context.stop(self))
 }

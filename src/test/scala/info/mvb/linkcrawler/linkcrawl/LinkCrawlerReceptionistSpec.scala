@@ -1,36 +1,33 @@
-package info.rkuhn.linkchecker
+package info.mvb.linkcrawler.linkcrawl
 
-import akka.testkit.TestKit
-import akka.testkit.ImplicitSender
-import org.scalatest.WordSpecLike
-import akka.actor.ActorSystem
-import akka.actor.Actor
-import akka.actor.Props
-import org.scalatest.BeforeAndAfterAll
+import akka.actor.{Actor, ActorSystem, Props}
+import akka.testkit.{ImplicitSender, TestKit}
+import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
+
 import scala.concurrent.duration._
 
-object ReceptionistSpec {
+object LinkCrawlerReceptionistSpec {
 
-  class FakeController extends Actor {
+  class FakeLinkGetter extends Actor {
     import context.dispatcher
     def receive = {
-      case Controller.Check(url, depth) =>
-        context.system.scheduler.scheduleOnce(1.second, sender, Controller.Result(Set(url)))
+      case LinkCrawler.Check(url, depth) =>
+        context.system.scheduler.scheduleOnce(1.second, sender, LinkCrawler.Result(Set(url)))
     }
   }
 
   def fakeReceptionist: Props =
-    Props(new Receptionist {
-      override def controllerProps = Props[FakeController]
+    Props(new LinkCrawlerReceptionist {
+      override def controllerProps = Props[FakeLinkGetter]
     })
 
 }
 
-class ReceptionistSpec extends TestKit(ActorSystem("ReceptionistSpec"))
+class LinkCrawlerReceptionistSpec extends TestKit(ActorSystem("ReceptionistSpec"))
   with WordSpecLike with BeforeAndAfterAll with ImplicitSender {
   
-  import ReceptionistSpec._
-  import Receptionist._
+  import LinkCrawlerReceptionist._
+  import LinkCrawlerReceptionistSpec._
 
   override def afterAll(): Unit = {
     system.shutdown()

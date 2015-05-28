@@ -1,16 +1,14 @@
-package info.rkuhn.linkchecker
+package info.mvb.linkcrawler.linkget
 
-import akka.testkit.TestKit
-import akka.actor.ActorSystem
-import org.scalatest.WordSpecLike
-import scala.concurrent.Future
 import java.util.concurrent.Executor
-import org.scalatest.BeforeAndAfterAll
-import akka.testkit.ImplicitSender
-import akka.actor.Props
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Terminated
+
+import akka.actor.{Actor, ActorRef, ActorSystem, Props, Terminated}
+import akka.testkit.{ImplicitSender, TestKit}
+import info.mvb.linkcrawler.common.{BadStatus, WebClient}
+import info.mvb.linkcrawler.linkcrawl.LinkCrawler
+import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
+
+import scala.concurrent.Future
 
 class StepParent(child: Props, fwd: ActorRef) extends Actor {
   context.watch(context.actorOf(child, "child"))
@@ -46,8 +44,8 @@ object GetterSpec {
   }
 
   def fakeGetter(url: String, depth: Int): Props =
-    Props(new Getter(url, depth) {
-      override def client = FakeWebClient
+    Props(new LinkGetterReceptionist(url, depth) {
+//      override def client = FakeWebClient //TODO how to get fake web client into child?
     })
 
 }
@@ -66,7 +64,7 @@ class GetterSpec extends TestKit(ActorSystem("GetterSpec"))
     "return the right body" in {
       val getter = system.actorOf(Props(new StepParent(fakeGetter(firstLink, 2), testActor)), "rightBody")
       for (link <- links(firstLink))
-        expectMsg(Controller.Check(link, 2))
+        expectMsg(LinkCrawler.Check(link, 2))
       watch(getter)
       expectTerminated(getter)
     }

@@ -1,9 +1,10 @@
-package info.rkuhn.linkchecker
+package info.mvb.linkcrawler.common
 
-import scala.concurrent.Future
-import com.ning.http.client.AsyncHttpClient
-import scala.concurrent.Promise
 import java.util.concurrent.Executor
+
+import com.ning.http.client.AsyncHttpClient
+
+import scala.concurrent.{Future, Promise}
 
 trait WebClient {
   def get(url: String)(implicit exec: Executor): Future[String]
@@ -16,7 +17,7 @@ object AsyncWebClient extends WebClient {
   private val client = new AsyncHttpClient
 
   def get(url: String)(implicit exec: Executor): Future[String] = {
-    val f = client.prepareGet(url).execute();
+    val f = client.prepareGet(url).execute()
     val p = Promise[String]()
     f.addListener(new Runnable {
       def run = {

@@ -1,17 +1,20 @@
-package info.rkuhn.linkchecker
+package info.mvb.linkcrawler.linkget
 
-import akka.actor.{Props, Actor, ActorLogging, Status}
-import akka.pattern.pipe
 import java.util.concurrent.Executor
-import scala.concurrent.ExecutionContext
-import org.jsoup.Jsoup
-import scala.collection.JavaConverters._
 
-object GetterMvB{
+import akka.actor.{Actor, Props, Status}
+import akka.pattern.pipe
+import info.mvb.linkcrawler.common.{AsyncWebClient, WebClient}
+import org.jsoup.Jsoup
+
+import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
+
+object LinkGetter{
   case class LinkFound(url: String)
   object Done
 
-  def props(url: String): Props = Props(new GetterMvB(url))
+  def props(url: String): Props = Props(new LinkGetter(url))
 }
 
 // feature/function/role/responsibility of this actor
@@ -19,8 +22,8 @@ object GetterMvB{
 
 // Made just for this one job and then stopped. It makes the single web request and pipes the scala future to itself
 // where it then parses the response, searching for what is of interest (a href tags here) and returning each item to its parent as it is found.
-class GetterMvB(url: String) extends Actor {
-  import GetterMvB._
+class LinkGetter(url: String) extends Actor {
+  import LinkGetter._
 
   implicit val executor = context.dispatcher.asInstanceOf[Executor with ExecutionContext]
   def client: WebClient = AsyncWebClient
@@ -32,7 +35,7 @@ class GetterMvB(url: String) extends Actor {
       for (link <- findLinks(body))
         context.parent ! LinkFound(link)
       stop()
-    case _: Status.Failure => stop()
+    case _: Status.Failure => context.stop(self) //TODO send error message so we know what happened!
   }
 
   def stop(): Unit ={

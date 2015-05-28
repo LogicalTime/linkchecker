@@ -1,24 +1,17 @@
-package info.rkuhn.linkchecker
+package info.mvb.linkcrawler
 
-import akka.actor.Actor
-import akka.actor.Props
+import akka.actor.{Actor, Props, ReceiveTimeout}
+import info.mvb.linkcrawler.common.AsyncWebClient
+import info.mvb.linkcrawler.linkcrawl.LinkCrawlerReceptionist
+
 import scala.concurrent.duration._
-import akka.actor.ReceiveTimeout
-import akka.cluster.Cluster
-import akka.cluster.ClusterEvent
-import akka.actor.RootActorPath
-import akka.actor.Identify
-import akka.actor.ActorIdentity
-import akka.actor.ActorLogging
-import akka.actor.Terminated
 
 class Main extends Actor {
 
-  import Receptionist._
+  import LinkCrawlerReceptionist._
 
-  val receptionist = context.actorOf(Props[Receptionist], "receptionist")
-  context.watch(receptionist) // sign death pact
-  // TODO what does it mean for an actor to be terminated? does restarted count? probably not!
+  val receptionist = context.actorOf(Props[LinkCrawlerReceptionist], "receptionist")
+  context.watch(receptionist) // sign death pact (if watched stops we receive terminated message and also stop if message is not handled)
   
   receptionist ! Get("http://www.google.com")
   receptionist ! Get("http://www.google.com/1")

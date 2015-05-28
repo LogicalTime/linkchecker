@@ -1,22 +1,17 @@
-package info.rkuhn.linkchecker
+package info.mvb.linkcrawler.linkcrawl
 
-import akka.actor.Actor
-import akka.actor.Props
-import akka.actor.Terminated
-import akka.actor.SupervisorStrategy
-import akka.actor.ActorLogging
-import akka.actor.ReceiveTimeout
+import akka.actor.{Actor, ActorLogging, OneForOneStrategy, ReceiveTimeout, SupervisorStrategy, Terminated}
+import info.mvb.linkcrawler.linkget.LinkGetterReceptionist
+
 import scala.concurrent.duration._
-import akka.actor.ActorRef
-import akka.actor.OneForOneStrategy
 
-object Controller {
+object LinkCrawler {
   case class Check(url: String, depth: Int)  // here depth = "depth url link was found at"
   case class Result(links: Set[String])
 }
 
-class Controller extends Actor with ActorLogging {
-  import Controller._
+class LinkCrawler extends Actor with ActorLogging {
+  import LinkCrawler._
 
   override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 5) {
     case _: Exception => SupervisorStrategy.Restart
@@ -33,7 +28,7 @@ class Controller extends Actor with ActorLogging {
       log.debug("{} checking {}", depth, url)
       if (!cache(url) && depth > 0) {
         //        context.watch(context.actorOf(Getter.props(url, depth - 1))) //depth-1 = "depth to search for url links at"
-        context.watch(context.actorOf(GetterReceptionistMvB.props(url, depth - 1))) //depth-1 = "depth to search for url links at"
+        context.watch(context.actorOf(LinkGetterReceptionist.props(url, depth - 1))) //depth-1 = "depth to search for url links at"
       }
       cache += url
     case Terminated(_) => //TODO why the heck is the termination message being used to signal "done", my intuition tells me this is bad. Am I missing something?
